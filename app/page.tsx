@@ -61,6 +61,31 @@ export default function Roulette() {
   const [betAmount, setBetAmount] = useState('0.1');
   const [showResult, setShowResult] = useState(false);
   const [jupiterLoaded, setJupiterLoaded] = useState(false);
+  const [countdown, setCountdown] = useState(120); // 2 minutes
+
+  // Countdown timer - auto refresh every 2 min
+  useEffect(() => {
+    const timer = setInterval(async () => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          return 120;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  // Trigger refresh when countdown resets (but not on mount)
+  const hasInitialized = useMemo(() => !isLoading, [isLoading]);
+  
+  useEffect(() => {
+    if (countdown === 120 && hasInitialized && !isSpinning) {
+      refreshTokens();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [countdown]);
 
   // Load Jupiter Plugin
   useEffect(() => {
@@ -230,11 +255,11 @@ export default function Roulette() {
           </div>
           <div className="flex items-center gap-3">
             <button
-              onClick={refreshTokens}
+              onClick={() => { refreshTokens(); setCountdown(120); }}
               disabled={isLoading || isSpinning}
               className="px-3 py-1 rounded-full text-xs bg-white/10 hover:bg-white/20 transition-all disabled:opacity-50 cursor-pointer"
             >
-              🔄 New Tokens
+              🔄 {Math.floor(countdown / 60)}:{(countdown % 60).toString().padStart(2, '0')}
             </button>
             <div className={`px-3 py-1 rounded-full text-xs ${jupiterLoaded ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
               {jupiterLoaded ? '● Ready' : '○ Loading...'}
